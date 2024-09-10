@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+
+  /* Spring Theme */
+  --spring-background: #e3f9e5;
+  --spring-foreground: #2d572c;
+
+  /* Summer Theme */
+  --summer-background: #fff5ba;
+  --summer-foreground: #ff7f11;
+
+  /* Autumn Theme */
+  --autumn-background: #ffefdb;
+  --autumn-foreground: #d2691e;
+
+  /* Winter Theme */
+  --winter-background: #e0f7fa;
+  --winter-foreground: #006064;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Spring Theme */
+  .theme-spring {
+    --background: var(--spring-background);
+    --foreground: var(--spring-foreground);
+  }
+
+  /* Summer Theme */
+  .theme-summer {
+    --background: var(--summer-background);
+    --foreground: var(--summer-foreground);
+  }
+
+  /* Autumn Theme */
+  .theme-autumn {
+    --background: var(--autumn-background);
+    --foreground: var(--autumn-foreground);
+  }
+
+  /* Winter Theme */
+  .theme-winter {
+    --background: var(--winter-background);
+    --foreground: var(--winter-foreground);
+  }
+}
