@@ -29,7 +29,7 @@ export default function Items() {
 
   const refreshItems = async () => {
     alert(
-      "Are you sure you want to refresh items? This will remove all items except the default items."
+      "Are you sure you want to refresh items? This will remove all non-default items."
     );
     setIsLoading(true);
     resetStore("mcc", "items");
