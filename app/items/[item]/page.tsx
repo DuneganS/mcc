@@ -45,6 +45,10 @@ const ItemPage = ({ params }: { params: any }) => {
   }, [isLoading, itemId]);
 
   const handleItemDelete = () => {
+    if (itemId === "newItemId") {
+      window.location.href = "/items";
+      return;
+    }
     deleteData("mcc", "items", item?.id);
     window.location.href = "/items";
   };
@@ -164,7 +168,6 @@ const ItemPage = ({ params }: { params: any }) => {
                 className="block bg-orange-600 hover:bg-orange-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
                 type="button"
                 onClick={handleItemDelete}
-                disabled={itemId === "newItemId"}
               >
                 <svg
                   className="h-4 w-4 text-black"
