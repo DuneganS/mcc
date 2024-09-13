@@ -138,3 +138,26 @@ export async function deleteData(
     };
   });
 }
+
+export async function updateData<T>(
+  dbName: string,
+  storeName: string,
+  data: T
+): Promise<void> {
+  const db = await openDB(dbName, storeName);
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(storeName, "readwrite");
+    const store = transaction.objectStore(storeName);
+    const request = store.put(data);
+
+    request.onerror = (event) => {
+      console.error("Error updating data:", event);
+      reject(event);
+    };
+
+    request.onsuccess = () => {
+      resolve();
+    };
+  });
+}

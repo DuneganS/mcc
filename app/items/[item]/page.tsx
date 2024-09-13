@@ -1,7 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
-import { notFound, redirect } from "next/navigation";
-import { getData, deleteData } from "@/app/utils/indexedDb";
+import { notFound } from "next/navigation";
+import {
+  getData,
+  deleteData,
+  addData,
+  updateData,
+} from "@/app/utils/indexedDb";
 import { ItemProps } from "@/app/types/Item";
 
 const ItemPage = ({ params }: { params: any }) => {
@@ -15,7 +20,17 @@ const ItemPage = ({ params }: { params: any }) => {
       const dbItems = await getData("mcc", "items");
       if (dbItems) {
         setItems(dbItems as ItemProps[]);
-        setItem((dbItems as ItemProps[]).find((item) => item.id === itemId));
+        if (itemId === "newItemId") {
+          setItem({
+            id: "",
+            name: "",
+            craftable: false,
+            image:
+              "data:image/webp;base64,UklGRuYDAABXRUJQVlA4TNoDAAAvK8FKEGegKJIUh8IL/l1lLqfn2VAUAIRjRdK/gQBeGnB7/JRGksIQLD3Qf2WPygo3/wFAxJB9TAk/TAJgU/OfPtOg8vLts0hdApLbRpKkaEv//3RmRFQvM+eI/k9AtThseABgw3VGO2HYMb6xfIQjOiM5fMRVVFfx3OSoTdTXKsouhrTd+F080f8HSMoFkCrjgFupDV2pFyalJmFWB5syyaoMuzHkONveRs43aZ3toU8wIOB+APkAscypdzedMZ2vkarttnc8whxg8/bC3CA5h5E2iBIV/k+kHBARDty2cSRHXvTrdZLNA1B70W9xsmo5k0HKaKG5innMybPYmQxSRox/lUNn/ztWJKQz/4kqvyI0WJrEHPYJDWaz7H8NfkWUDf7nFn1SUsoPadFKUHketIo0mhncqcBHKfdzK6mBFjokfxkJjSPrF7kWidaGnz/L/hxKQ7JPjZAHwcYoV0mnMG4ZV7BxKm+lqZamW0mfBXJgLEjk2LkwdhE5m4+B4aksuigqpmEESeH4lvm9yEEr2b5mr92VaH9GHgRvPXYxDCqeIy86dlNT91SAV6DbySuw/H7QcjUwsLZo8lg4ZBwatGl9DvkdEf5WiSErgnISGn1FBaVgVokzQanjWT4olVXqz6Vopr+Iq34e+JBVjjwoQ63kkYoMcyG9IYISJCQOQCq2XIj7PWdDnmY5keycY8UlZFFM3SjbFWMaRqExyhSV6wIoId90gi57qKAQCk+CnaCTGTFOmblpnQ6sfGTFGwdBVY529Q38KiUB06m+gVIUdBgZelgFKikMX9tpU7zAyNCcDG1tThMCsq0cEf/P/4pZpEGmI9yTqrSpY6R5/fdeu4oCo0Hxpmc5sJpnxIRWHtN18FFda86PeHHG//xXQ3zjpJHveYzmO2aNFg2F2qQ0qCdU/QJSoJ7wek3Os3UofL6yxNXdGgou+eEM6gl4fXxmW4mlOXhmAwnz4HbuARItvTxsRqqQznk8QQMfbnkhPdk/CV7kORldtM+AB9eQojOsOgqAMeNTspS/o8v9NCTrTL5Z0ZN8cBLu9wSqKOSpMMSpODgJ41OyVEzGbRolIDM5kbxvl8KUhI8MCInTRnrk1VBuMwgyDNomvGf9LQLnY5cTuysSswecDGxlmhErF+o0uoILxZYbkfEhxFEBjUsh9TuBoz00nKo8beYsCq2+kmdgwRahhTDd/ZZ0nUpjC5liMQppIS5snDVWc0lGvziTsot0LI0Y4rFuNiIfUh1Q7tsUaTjUOfxPvzLINtmdjOBQaqJiTMrf6BTXPXmyvn7yPceHEzOi/hqmAQ==",
+          });
+        } else {
+          setItem((dbItems as ItemProps[]).find((item) => item.id === itemId));
+        }
       }
       setIsLoading(false);
     };
@@ -38,7 +53,62 @@ const ItemPage = ({ params }: { params: any }) => {
     setItem((prev) => (prev ? { ...prev, craftable: !prev.craftable } : prev));
   };
 
-  const handleItemUpdate = () => {};
+  const handleItemSaveUpdate = () => {
+    let action = "create";
+    if (!item) {
+      alert("No item to save");
+      return;
+    }
+
+    if (item.id === "" || item.id === "newItemId") {
+      alert("Please enter a valid item ID");
+      return;
+    }
+
+    if (items.find((i) => i.id === item.id)) {
+      action = "update";
+    }
+
+    const saveItem = async () => {
+      if (action === "create") {
+        await addData("mcc", "items", item);
+      } else {
+        await updateData("mcc", "items", item);
+      }
+    };
+
+    saveItem();
+    window.location.href = `/items/${item.id}`;
+  };
+
+  const handleUpdateItemName = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const sanitizedValue = e.target.value.replace(/[^a-zA-Z0-9\s]/g, "");
+    setItem((prev) => (prev ? { ...prev, name: sanitizedValue } : prev));
+    setItem((prev) =>
+      prev
+        ? { ...prev, id: sanitizedValue.replace(/\s+/g, "_").toLowerCase() }
+        : prev
+    );
+  };
+
+  const handleImageUpload = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = async (e: Event) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setItem((prev) =>
+            prev ? { ...prev, image: reader.result as string } : prev
+          );
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    input.click();
+  };
 
   return (
     <>
@@ -67,13 +137,13 @@ const ItemPage = ({ params }: { params: any }) => {
       ) : (
         <div className="w-4/5 mx-auto m-5 bg-orange-500/75 rounded-xl pb-1">
           <div className="p-2 rounded-t-xl bg-orange-500/80 flex justify-between items-center">
-            <p className="font-bold text-lg">{item?.name}</p>
+            <p className="font-bold text-lg">{item?.name || "Adding item"}</p>
             <div className="flex gap-2">
               <button
                 title="Save item"
                 className="block bg-orange-600 hover:bg-orange-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
                 type="button"
-                onClick={handleItemUpdate}
+                onClick={handleItemSaveUpdate}
               >
                 <svg
                   className="h-4 w-4 text-black"
@@ -94,6 +164,7 @@ const ItemPage = ({ params }: { params: any }) => {
                 className="block bg-orange-600 hover:bg-orange-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
                 type="button"
                 onClick={handleItemDelete}
+                disabled={itemId === "newItemId"}
               >
                 <svg
                   className="h-4 w-4 text-black"
@@ -147,23 +218,40 @@ const ItemPage = ({ params }: { params: any }) => {
                   name="name"
                   className="rounded p-2 bg-gray-200 w-full"
                   defaultValue={item?.name}
+                  onChange={handleUpdateItemName}
                 />
               </div>
               <div className="mb-2">
-                <label
-                  className="block text-gray-700 font-medium mb-2"
-                  htmlFor="name"
-                >
-                  Image:
-                </label>
-                <input
-                  type="text"
-                  id="image"
-                  name="image"
-                  disabled
-                  className="rounded p-2 bg-gray-200 w-full"
-                  value={item?.image}
-                />
+                <div className="flex items-center mb-2">
+                  <label
+                    className="block text-gray-700 font-medium mr-2"
+                    htmlFor="image"
+                  >
+                    Image:
+                  </label>
+                  <button
+                    className="bg-orange-600 hover:bg-orange-800 text-white font-medium rounded-lg text-sm px-4 py-2 h-8 w-full flex justify-center items-center"
+                    type="button"
+                    onClick={handleImageUpload}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="1em"
+                      height="1em"
+                      viewBox="0 0 24 24"
+                      className="h-6 w-6 text-black"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <polyline points="21 15 16 10 5 21" />
+                    </svg>
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="flex items-center cursor-pointer">

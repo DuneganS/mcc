@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import Item from "@/app/components/ItemCard";
 import { ItemProps } from "@/app/types/Item";
-import { getData, addData, resetStore } from "@/app/utils/indexedDb";
+import { getData, resetStore } from "@/app/utils/indexedDb";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import NewItemModal from "@/app/components/NewItemModal";
 
-export default function Items() {
+export default function ItemsPage() {
+  const router = useRouter();
   const [items, setItems] = useState<ItemProps[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -23,8 +23,8 @@ export default function Items() {
     fetchData();
   }, [items]);
 
-  const toggleModal = () => {
-    setIsModalOpen(!isModalOpen);
+  const handleAddItem = () => {
+    router.push(`/items/newItemId`);
   };
 
   const refreshItems = async () => {
@@ -57,7 +57,7 @@ export default function Items() {
           <button
             title="Add new item"
             className="bg-orange-600 hover:bg-orange-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2"
-            onClick={toggleModal}
+            onClick={handleAddItem}
           >
             <svg
               className="h-4 w-4 text-black"
@@ -123,7 +123,6 @@ export default function Items() {
             </svg>
           </button>
         </div>
-        {isModalOpen && <NewItemModal toggleModal={toggleModal} />}
       </div>
       <div className="p-2 ">
         {isLoading ? (
