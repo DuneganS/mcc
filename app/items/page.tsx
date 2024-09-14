@@ -49,11 +49,43 @@ export default function ItemsPage() {
     };
   };
 
+  const handleExportItems = async () => {
+    const items = await getData<ItemProps>("mcc", "items");
+    const dataStr =
+      "data:text/json;charset=utf-8," +
+      encodeURIComponent(JSON.stringify(items));
+    const downloadAnchorNode = document.createElement("a");
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "mcc-items.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
+
   return (
     <div className="w-4/5 mx-auto m-5 bg-orange-500/75 rounded-xl">
       <div className="p-2 rounded-xl bg-orange-500/80 flex justify-between items-center">
         <p className="font-bold text-lg">Current Inventory</p>
-        <div className="block flex items-center">
+        <div id="item-controls" className="block flex items-center">
+          <button
+            title="Export Items"
+            className="bg-orange-600 hover:bg-orange-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2"
+            onClick={handleExportItems}
+          >
+            <svg
+              className="h-4 w-4 text-black"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+              />
+            </svg>
+          </button>
           <button
             title="Add new item"
             className="bg-orange-600 hover:bg-orange-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2"
@@ -76,7 +108,7 @@ export default function ItemsPage() {
             </svg>
           </button>
           <button
-            title="Reset to default items"
+            title="Reset items"
             className="bg-orange-600 hover:bg-orange-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2"
             type="button"
             onClick={refreshItems}
