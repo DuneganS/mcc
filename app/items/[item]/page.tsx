@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import {
   getData,
   deleteData,
@@ -8,6 +9,7 @@ import {
   updateData,
 } from "@/app/utils/indexedDb";
 import { ItemProps } from "@/app/types/Item";
+import CraftingGrid from "@/app/components/CraftingGrid";
 
 const ItemPage = ({ params }: { params: any }) => {
   const itemId = params.item;
@@ -293,40 +295,26 @@ const ItemPage = ({ params }: { params: any }) => {
               <h1 className="text-xl justify-center flex m-2">
                 Crafting Recipe
               </h1>
-              <table className="bg-gray-100 w-full">
-                <thead>
-                  <tr>
-                    <th>Item</th>
-                    <th>Input</th>
-                    <th>Output</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {item?.recipe?.ingredients.map((ingredient) => (
-                    <tr key={ingredient.id}>
-                      <td>
-                        <select name="items" value={ingredient.id}>
-                          {items.map((item) => (
-                            <option key={item?.id} value={item?.id}>
-                              {item?.name}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td>
-                        <input type="number" value={ingredient.count} />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          value={item?.recipe?.outputCount}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <ul>
+                    {items.map((i) => (
+                      <li key={i.id} className="flex items-center gap-2">
+                        <Image
+                          width={40}
+                          height={40}
+                          src={i.image}
+                          alt={i.name}
                         />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <pre>{JSON.stringify(item, null, 2)}</pre>
+                        <span>{i.name}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="flex justify-center items-center">
+                  <CraftingGrid />
+                </div>
+              </div>
             </div>
           )}
         </div>

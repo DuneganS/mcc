@@ -62,11 +62,34 @@ export default function ItemsPage() {
     downloadAnchorNode.remove();
   };
 
+  const handleImportItems = async () => {
+    console.log("Importing items");
+  };
+
   return (
     <div className="w-4/5 mx-auto m-5 bg-orange-500/75 rounded-xl">
       <div className="p-2 rounded-xl bg-orange-500/80 flex justify-between items-center">
         <p className="font-bold text-lg">Current Inventory</p>
         <div id="item-controls" className="block flex items-center">
+          <button
+            title="Import Items"
+            className="bg-orange-600 hover:bg-orange-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2"
+            onClick={handleImportItems}
+          >
+            <svg
+              className="h-4 w-4 text-black"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+              />
+            </svg>
+          </button>
           <button
             title="Export Items"
             className="bg-orange-600 hover:bg-orange-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2"
