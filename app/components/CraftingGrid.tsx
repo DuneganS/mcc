@@ -1,22 +1,60 @@
 import Image from "next/image";
-import React from "react";
+import React, { useEffect } from "react";
 import { ItemProps } from "../types/Item";
+import { getData } from "../utils/indexedDb";
+import { useDroppable } from "@dnd-kit/core";
+import { CRAFTING_ARROW } from "../utils/constants";
 
-const CraftingGridInSlot: React.FC<{ item?: ItemProps }> = ({ item }) => {
+const CraftingGridInSlot: React.FC<{ slot: number; itemId?: string }> = ({
+  slot,
+  itemId = "",
+}) => {
+  const [item, setItem] = React.useState<ItemProps | null>(null);
+  const { isOver, setNodeRef } = useDroppable({
+    id: `droppable-slot-${slot}`,
+  });
+
+  if (itemId !== "") {
+    getData("mcc", "items", itemId).then((data) => {
+      setItem(data as unknown as ItemProps);
+    });
+  }
+
+  const border = isOver
+    ? "border-cyan-500"
+    : "border-t-[#373737] border-r-[#FFF] border-b-[#FFF] border-l-[#373737]";
+
   return (
     <a
+      ref={setNodeRef}
       href={item ? `/items/${item.id}` : "#"}
-      title={item && item.name}
-      className="relative inline-block bg-[#8B8B8B] border-4 border-t-[#373737] border-r-[#FFF] border-b-[#FFF] border-l-[#373737] w-16 h-16 text-xs leading-none text-left align-bottom"
+      title={item?.name}
+      className={`relative inline-block bg-[#8B8B8B] border-4 ${border} w-16 h-16 text-xs leading-none text-left align-bottom`}
     >
       {item && <Image src={item.image} alt={item.name} fill={true}></Image>}
     </a>
   );
 };
 
-const CraftingGridOutSlot: React.FC<{ item?: ItemProps }> = ({ item }) => {
+const CraftingGridOutSlot: React.FC<{
+  item: ItemProps;
+}> = ({ item }) => {
+  const [outputCount, setOutputCount] = React.useState(item.recipeOutput);
   return (
-    <span className="relative inline-block bg-[#8B8B8B] border-2 border-t-[#373737] border-r-[#FFF] border-b-[#FFF] border-l-[#373737] w-24 h-24 text-xs leading-none text-left align-bottom -ml-8"></span>
+    <span className="relative inline-block bg-[#8B8B8B] border-2 border-t-[#373737] border-r-[#FFF] border-b-[#FFF] border-l-[#373737] w-24 h-24 text-xs leading-none text-left align-bottom -ml-8 flex items-center justify-center">
+      <Image src={item.image} alt={item.name} fill={true}></Image>
+      <input
+        type="number"
+        value={outputCount}
+        onChange={(e) => {
+          const value = Math.max(1, Math.min(64, Number(e.target.value)));
+          setOutputCount(value);
+        }}
+        className="bg-transparent text-white font-bold text-2xl text-center appearance-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none w-full h-full z-10"
+        min="1"
+        max="64"
+      />
+    </span>
   );
 };
 
@@ -26,33 +64,29 @@ const CraftingGridRow: React.FC<{ children: React.ReactNode }> = ({
   return <span className="block">{children}</span>;
 };
 
-const CraftingGrid: React.FC<{ items: (ItemProps | undefined)[] }> = ({
-  items,
-}) => {
+const CraftingGrid: React.FC<{
+  item: ItemProps;
+}> = ({ item }) => {
   return (
-    <span className="gap-1 border-2 p-1.5 bg-[#C6C6C6] inline-block rounded flex items-center flex-shrink-0 flex-grow-0">
+    <span className="gap-1 border-2 p-1.5 bg-[#C6C6C6] inline-block rounded flex items-center flex-shrink-0 flex-grow-0 mb-5">
       <span className="inline-block relative bg-[#C6C6C6] border-solid border-1 border-t-[#DBDBDB] border-r-[#5B5B5B] border-b-[#5B5B5B] border-l-[#DBDBDB] p-0.5 text-left whitespace-nowrap align-bottom">
-        <CraftingGridRow>
-          <CraftingGridInSlot />
-          <CraftingGridInSlot />
-          <CraftingGridInSlot />
-        </CraftingGridRow>
-        <CraftingGridRow>
-          <CraftingGridInSlot />
-          <CraftingGridInSlot />
-          <CraftingGridInSlot />
-        </CraftingGridRow>
-        <CraftingGridRow>
-          <CraftingGridInSlot />
-          <CraftingGridInSlot />
-          <CraftingGridInSlot />
-        </CraftingGridRow>
+        {Array.from({ length: 3 }, (_, rowIndex) => (
+          <CraftingGridRow key={rowIndex}>
+            {Array.from({ length: 3 }, (_, colIndex) => {
+              const slot = rowIndex * 3 + colIndex;
+              return (
+                <CraftingGridInSlot
+                  key={slot}
+                  slot={slot}
+                  itemId={item.recipeIngredients[slot]}
+                />
+              );
+            })}
+          </CraftingGridRow>
+        ))}
       </span>
-      <img
-        className="scale-[.50] -ml-8"
-        src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAACCCAYAAADBq8MQAAABhWlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw0AcxV9bS1WqDnYQcQhSnSyIijiWKhbBQmkrtOpgcukXNGlIUlwcBdeCgx+LVQcXZ10dXAVB8APE2cFJ0UVK/F9SaBHjwXE/3t173L0DvI0KU4yuKKCopp6Kx4RsblUIvKIH/fBjFJMiM7REejED1/F1Dw9f7yI8y/3cn6NPzhsM8AjEUabpJvEG8eymqXHeJw6xkigTnxNP6HRB4keuSw6/cS7a7OWZIT2TmicOEQvFDpY6mJV0hXiGOCwrKuV7sw7LnLc4K5Uaa92TvzCYV1fSXKc5gjiWkEASAiTUUEYFJiK0qqQYSNF+zMU/bPuT5JLIVQYjxwKqUCDafvA/+N2tUZiecpKCMcD/YlkfY0BgF2jWLev72LKaJ4DvGbhS2/5qA5j7JL3e1sJHwMA2cHHd1qQ94HIHGHrSRF20JR9Nb6EAvJ/RN+WAwVugd83prbWP0wcgQ10t3wAHh8B4kbLXXd7d3dnbv2da/f0A0GZyzCAvNssAAAAGYktHRAD/AP8A/6C9p5MAAAAJcEhZcwAALiMAAC4jAXilP3YAAAAHdElNRQfoCQ4FJDgELb3eAAAAGXRFWHRDb21tZW50AENyZWF0ZWQgd2l0aCBHSU1QV4EOFwAAAW5JREFUeNrt3cGNQjEMRdEE0XKq+EVDC17EjgnnrGeFrhxpnhBzUOJ5nk/k79Za858+l5c0ECACBAEiQBAgAgQBIkDINH0ENaJLSNQti4kLiAARIAgQAYIAESAIEAFCKktIkd1LSFT3xcQFRIAIEASIAEGACBAEiAAhlSWkyKklJOrUYuIC4glGgCBABAgCRIAgQAQIqSwhRbovIVG7FxMXEE8wAgQBIkAQIAIEASJASDVv+Q89vUQXExcQTzACBAEiQBAgAgQBIkBIZQnBBUSAIEAECAJEgCBABAgC5F5vHwEZfCcETzAIEAGCABEgCBABggBpwe+EFPE7IS4gnmAQIAIEASJABAgCRIBwgO+EMMbYv3C4gHiCQYAIEASIAEGACBAESAuWkMudWjhcQDzBIEAECAJEgCBABAgCpAVLyI/qvnC4gAgQBIgAQYAIEASIAEGAtGAJaeaWhcMFRIAgQAQIAkSAIEAECAKkhS9L1iaH2BgGhQAAAABJRU5ErkJggg=="
-      />
-      <CraftingGridOutSlot />
+      <img className="scale-[.50] -ml-8" src={CRAFTING_ARROW} />
+      <CraftingGridOutSlot item={item} />
     </span>
   );
 };

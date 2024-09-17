@@ -10,12 +10,39 @@ import {
 } from "@/app/utils/indexedDb";
 import { ItemProps } from "@/app/types/Item";
 import CraftingGrid from "@/app/components/CraftingGrid";
+import { DndContext, useDraggable } from "@dnd-kit/core";
+import { DEFAULT_ITEM } from "@/app/utils/constants";
+
+const DraggableItem = ({ item }: { item: ItemProps }) => {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id: `draggable-item-${item.id}`,
+  });
+
+  const dragStyle = transform
+    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
+    : undefined;
+
+  return (
+    <Image
+      width={64}
+      height={64}
+      src={item.image}
+      alt={item.name}
+      ref={setNodeRef}
+      style={dragStyle}
+      className="z-10"
+      {...attributes}
+      {...listeners}
+    />
+  );
+};
 
 const ItemPage = ({ params }: { params: any }) => {
   const itemId = params.item;
   const [item, setItem] = useState<ItemProps>();
   const [items, setItems] = useState<ItemProps[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDropped, setIsDropped] = useState(false);
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -23,15 +50,15 @@ const ItemPage = ({ params }: { params: any }) => {
       if (dbItems) {
         setItems(dbItems as ItemProps[]);
         if (itemId === "newItemId") {
-          setItem({
-            id: "",
-            name: "",
-            craftable: false,
-            image:
-              "data:image/webp;base64,UklGRuYDAABXRUJQVlA4TNoDAAAvK8FKEGegKJIUh8IL/l1lLqfn2VAUAIRjRdK/gQBeGnB7/JRGksIQLD3Qf2WPygo3/wFAxJB9TAk/TAJgU/OfPtOg8vLts0hdApLbRpKkaEv//3RmRFQvM+eI/k9AtThseABgw3VGO2HYMb6xfIQjOiM5fMRVVFfx3OSoTdTXKsouhrTd+F080f8HSMoFkCrjgFupDV2pFyalJmFWB5syyaoMuzHkONveRs43aZ3toU8wIOB+APkAscypdzedMZ2vkarttnc8whxg8/bC3CA5h5E2iBIV/k+kHBARDty2cSRHXvTrdZLNA1B70W9xsmo5k0HKaKG5innMybPYmQxSRox/lUNn/ztWJKQz/4kqvyI0WJrEHPYJDWaz7H8NfkWUDf7nFn1SUsoPadFKUHketIo0mhncqcBHKfdzK6mBFjokfxkJjSPrF7kWidaGnz/L/hxKQ7JPjZAHwcYoV0mnMG4ZV7BxKm+lqZamW0mfBXJgLEjk2LkwdhE5m4+B4aksuigqpmEESeH4lvm9yEEr2b5mr92VaH9GHgRvPXYxDCqeIy86dlNT91SAV6DbySuw/H7QcjUwsLZo8lg4ZBwatGl9DvkdEf5WiSErgnISGn1FBaVgVokzQanjWT4olVXqz6Vopr+Iq34e+JBVjjwoQ63kkYoMcyG9IYISJCQOQCq2XIj7PWdDnmY5keycY8UlZFFM3SjbFWMaRqExyhSV6wIoId90gi57qKAQCk+CnaCTGTFOmblpnQ6sfGTFGwdBVY529Q38KiUB06m+gVIUdBgZelgFKikMX9tpU7zAyNCcDG1tThMCsq0cEf/P/4pZpEGmI9yTqrSpY6R5/fdeu4oCo0Hxpmc5sJpnxIRWHtN18FFda86PeHHG//xXQ3zjpJHveYzmO2aNFg2F2qQ0qCdU/QJSoJ7wek3Os3UofL6yxNXdGgou+eEM6gl4fXxmW4mlOXhmAwnz4HbuARItvTxsRqqQznk8QQMfbnkhPdk/CV7kORldtM+AB9eQojOsOgqAMeNTspS/o8v9NCTrTL5Z0ZN8cBLu9wSqKOSpMMSpODgJ41OyVEzGbRolIDM5kbxvl8KUhI8MCInTRnrk1VBuMwgyDNomvGf9LQLnY5cTuysSswecDGxlmhErF+o0uoILxZYbkfEhxFEBjUsh9TuBoz00nKo8beYsCq2+kmdgwRahhTDd/ZZ0nUpjC5liMQppIS5snDVWc0lGvziTsot0LI0Y4rFuNiIfUh1Q7tsUaTjUOfxPvzLINtmdjOBQaqJiTMrf6BTXPXmyvn7yPceHEzOi/hqmAQ==",
-          });
+          const glassItem = (dbItems as ItemProps[]).find(
+            (item) => item.name.toLowerCase() === "glass"
+          );
+          setItem(DEFAULT_ITEM);
         } else {
-          setItem((dbItems as ItemProps[]).find((item) => item.id === itemId));
+          const selectedItem = (dbItems as ItemProps[]).find(
+            (item) => item.id === itemId
+          );
+          setItem(selectedItem);
         }
       }
       setIsLoading(false);
@@ -75,6 +102,11 @@ const ItemPage = ({ params }: { params: any }) => {
       action = "update";
     }
 
+    if (!item.craftable) {
+      item.recipeIngredients = Array(9).fill("");
+      item.recipeOutput = 0;
+    }
+
     const saveItem = async () => {
       if (action === "create") {
         await addData("mcc", "items", item);
@@ -116,8 +148,22 @@ const ItemPage = ({ params }: { params: any }) => {
     input.click();
   };
 
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setIsDropped(true);
+      setItem((prev) => {
+        if (!prev) return prev;
+        const newIngredients = [...(prev.recipeIngredients || [])];
+        const overIndex = parseInt(over.id.replace("droppable-slot-", ""), 10);
+        newIngredients[overIndex] = active.id.replace("draggable-item-", "");
+        return { ...prev, recipeIngredients: newIngredients };
+      });
+    }
+  };
+
   return (
-    <>
+    <DndContext onDragEnd={handleDragEnd}>
       {isLoading ? (
         <div className="flex items-center justify-center min-h-screen">
           <div role="status">
@@ -291,35 +337,30 @@ const ItemPage = ({ params }: { params: any }) => {
             </div>
           </div>
           {item?.craftable && (
-            <div className="col-span-4 m-2 p-2 bg-red-500/75 rounded-xl">
+            <div className="m-2 justify-center bg-red-500/75 rounded-xl">
               <h1 className="text-xl justify-center flex m-2">
                 Crafting Recipe
               </h1>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <ul>
-                    {items.map((i) => (
-                      <li key={i.id} className="flex items-center gap-2">
-                        <Image
-                          width={40}
-                          height={40}
-                          src={i.image}
-                          alt={i.name}
-                        />
-                        <span>{i.name}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="flex justify-center items-center">
-                  <CraftingGrid />
+              <div className="grid grid-cols-3 gap-4 m-2">
+                <ul className="grid grid-cols-5 gap-2 h-16">
+                  {items.map((i) => (
+                    <li
+                      key={i.id}
+                      className="flex items-center justify-center bg-[#8B8B8B] rounded-xl border-2 border-black p-0.5"
+                    >
+                      <DraggableItem item={i} />
+                    </li>
+                  ))}
+                </ul>
+                <div className="col-span-2 flex justify-center items-center">
+                  <CraftingGrid item={item} />
                 </div>
               </div>
             </div>
           )}
         </div>
       )}
-    </>
+    </DndContext>
   );
 };
 

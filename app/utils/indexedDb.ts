@@ -89,24 +89,37 @@ export async function addData<T>(
 
 export async function getData<T>(
   dbName: string,
-  storeName: string
+  storeName: string,
+  id?: string
 ): Promise<T[]> {
   const db = await openDB(dbName, storeName);
 
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(storeName, "readonly");
     const store = transaction.objectStore(storeName);
-    const request = store.getAll();
+    if (id) {
+      const request = store.get(id);
 
-    request.onerror = (event) => {
-      console.error("Error getting data:", event);
-      reject(event);
-    };
+      request.onerror = (event) => {
+        console.error("Error getting data:", event);
+        reject(event);
+      };
 
-    request.onsuccess = () => {
-      resolve(request.result as T[]);
-    };
-    return;
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+    } else {
+      const request = store.getAll();
+
+      request.onerror = (event) => {
+        console.error("Error getting data:", event);
+        reject(event);
+      };
+
+      request.onsuccess = () => {
+        resolve(request.result as T[]);
+      };
+    }
   });
 }
 
