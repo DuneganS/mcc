@@ -162,6 +162,10 @@ const ItemPage = ({ params }: { params: any }) => {
     }
   };
 
+  const handleRecipeOutputChange = (output: number) => {
+    setItem((prev) => (prev ? { ...prev, recipeOutput: output } : prev));
+  };
+
   return (
     <DndContext onDragEnd={handleDragEnd}>
       {isLoading ? (
@@ -353,7 +357,10 @@ const ItemPage = ({ params }: { params: any }) => {
                   ))}
                 </ul>
                 <div className="col-span-2 flex justify-center items-center">
-                  <CraftingGrid item={item} />
+                  <CraftingGrid
+                    item={item}
+                    onRecipeOutputChange={handleRecipeOutputChange}
+                  />
                 </div>
               </div>
             </div>
