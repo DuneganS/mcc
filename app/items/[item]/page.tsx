@@ -19,7 +19,10 @@ const DraggableItem = ({ item }: { item: ItemProps }) => {
   });
 
   const dragStyle = transform
-    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
+    ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+        zIndex: 1000,
+      }
     : undefined;
 
   return (
@@ -30,7 +33,6 @@ const DraggableItem = ({ item }: { item: ItemProps }) => {
       alt={item.name}
       ref={setNodeRef}
       style={dragStyle}
-      className="z-10"
       {...attributes}
       {...listeners}
     />
