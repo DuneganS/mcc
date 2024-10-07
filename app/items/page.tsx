@@ -67,7 +67,7 @@ export default function ItemsPage() {
   };
 
   return (
-    <div className="w-4/5 mx-auto m-5 bg-orange-500/75 rounded-xl">
+    <div className="w-4/5 mx-auto m-5 bg-orange-500/75 rounded-xl min-w-[450px] max-w-[1440px]">
       <div className="p-2 rounded-xl bg-orange-500/80 flex justify-between items-center">
         <p className="font-bold text-lg">Current Inventory</p>
         <div id="item-controls" className="block flex items-center">
@@ -183,9 +183,9 @@ export default function ItemsPage() {
         {isLoading ? (
           <div className="text-center">Loading...</div>
         ) : (
-          <div className="grid grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {items.length === 0 ? (
-              <div className="col-span-5 text-center">
+              <div className="col-span-full text-center">
                 No items found. Add some items to get started.
               </div>
             ) : (
