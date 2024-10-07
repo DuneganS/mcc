@@ -9,7 +9,7 @@ function openDB(dbName: string, storeName: string): Promise<IDBDatabase> {
       reject(event);
     };
 
-    request.onupgradeneeded = (event) => {
+    request.onupgradeneeded = () => {
       const db = request.result;
       if (!db.objectStoreNames.contains(storeName)) {
         db.createObjectStore(storeName, {

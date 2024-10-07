@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { notFound } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import {
   getData,
   deleteData,
@@ -8,7 +8,7 @@ import {
   updateData,
 } from "@/app/utils/indexedDb";
 import { ItemProps } from "@/app/types/Item";
-import { DndContext, useDraggable } from "@dnd-kit/core";
+import { DndContext, DragEndEvent } from "@dnd-kit/core";
 import { DEFAULT_ITEM } from "@/app/utils/constants";
 import DraggableItem from "@/app/components/DraggableItem";
 import { CRAFTING_ARROW } from "@/app/utils/constants";
@@ -17,12 +17,12 @@ import React from "react";
 import DroppableSlot from "@/app/components/DroppableSlot";
 import { nanoid } from "nanoid";
 
-const ItemPage = ({ params }: { params: any }) => {
-  const itemId = params.item;
+const ItemPage: React.FC = () => {
+  const params = useParams();
+  const itemId = params.item as string;
   const [item, setItem] = useState<ItemProps>();
   const [items, setItems] = useState<ItemProps[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [hoveredDroppable, setHoveredDroppable] = useState<number | null>(null);
   const [itemsInGrid, setItemsInGrid] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
@@ -31,9 +31,6 @@ const ItemPage = ({ params }: { params: any }) => {
       if (dbItems) {
         setItems(dbItems as ItemProps[]);
         if (itemId === "newItemId") {
-          const glassItem = (dbItems as ItemProps[]).find(
-            (item) => item.name.toLowerCase() === "glass"
-          );
           setItem(DEFAULT_ITEM);
         } else {
           const selectedItem = (dbItems as ItemProps[]).find(
@@ -63,20 +60,20 @@ const ItemPage = ({ params }: { params: any }) => {
     if (!isLoading && !item) {
       notFound();
     }
-  }, [isLoading, itemId]);
+  }, [isLoading, itemId, item]);
 
   useEffect(() => {
     setItem((prevItem) => {
       if (!prevItem) return prevItem;
 
       const newRecipeIngredients = Array(9).fill("");
-      console.log("itemsInGrid:", itemsInGrid); // Debugging log
+      console.log("itemsInGrid:", itemsInGrid);
 
       Object.keys(itemsInGrid).forEach((key) => {
         const index = parseInt(key, 10);
         console.log(
           `Setting index ${index} with value ${itemsInGrid[key].split("-")[0]}`
-        ); // Debugging log
+        );
         newRecipeIngredients[index] = itemsInGrid[key].split("-")[0];
       });
 
@@ -162,20 +159,20 @@ const ItemPage = ({ params }: { params: any }) => {
     input.click();
   };
 
-  const handleDragEnd = (event: any) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (over) {
-      const droppableId = parseInt(over.id.split("-")[1], 10);
-      const uniqueId = `${active.id.split("-")[0]}-${nanoid()}`;
+      const droppableId = parseInt((over.id as string).split("-")[1], 10);
+      const uniqueId = `${String(active.id).split("-")[0]}-${nanoid()}`;
       setItemsInGrid((prev) => {
         const newSelectedItems = { ...prev };
-        // Remove the item from its previous droppable
+
         Object.keys(newSelectedItems).forEach((key) => {
           if (newSelectedItems[key] === active.id) {
             delete newSelectedItems[key];
           }
         });
-        // Add the item to the new droppable
+
         newSelectedItems[droppableId.toString()] = uniqueId;
         return newSelectedItems;
       });
@@ -192,16 +189,6 @@ const ItemPage = ({ params }: { params: any }) => {
     }
   };
 
-  const handleDragOver = (event: any) => {
-    const { over } = event;
-    if (over) {
-      const droppableId = parseInt(over.id.split("-")[1], 10);
-      setHoveredDroppable(droppableId);
-    } else {
-      setHoveredDroppable(null);
-    }
-  };
-
   const handleOutputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const outputCount = Math.max(1, Math.min(64, Number(e.target.value)));
     setItem((prev) =>
@@ -215,7 +202,7 @@ const ItemPage = ({ params }: { params: any }) => {
   };
 
   return (
-    <DndContext onDragEnd={handleDragEnd} onDragOver={handleDragOver}>
+    <DndContext onDragEnd={handleDragEnd}>
       {isLoading ? (
         <div className="flex items-center justify-center min-h-screen">
           <div role="status">
@@ -381,9 +368,11 @@ const ItemPage = ({ params }: { params: any }) => {
               </div>
             </div>
             <div className="justify-center flex m-2 p-2 bg-white rounded-lg">
-              <img
-                src={item?.image}
-                alt={item?.name}
+              <Image
+                height={16}
+                width={16}
+                src={item?.image || ""}
+                alt={item?.name || ""}
                 className="w-[256px] h-auto"
               />
             </div>
@@ -416,11 +405,7 @@ const ItemPage = ({ params }: { params: any }) => {
                           {Array.from({ length: 3 }, (_, colIndex) => {
                             const slot = rowIndex * 3 + colIndex;
                             return (
-                              <DroppableSlot
-                                key={slot}
-                                id={slot}
-                                isHovered={hoveredDroppable === slot}
-                              >
+                              <DroppableSlot key={slot} id={slot}>
                                 {itemsInGrid[slot] && (
                                   <DraggableItem
                                     key={itemsInGrid[slot]}
@@ -447,12 +432,18 @@ const ItemPage = ({ params }: { params: any }) => {
                         </span>
                       ))}
                     </span>
-                    <img className="scale-[.50] -ml-8" src={CRAFTING_ARROW} />
+                    <Image
+                      className="scale-[.50] -ml-8"
+                      alt="CraftingArrow"
+                      src={CRAFTING_ARROW}
+                      width={128}
+                      height={180}
+                    />
                     <span className="relative inline-block bg-[#8B8B8B] border-2 border-t-[#373737] border-r-[#FFF] border-b-[#FFF] border-l-[#373737] w-24 h-24 text-xs leading-none text-left align-bottom -ml-8 flex items-center justify-center">
                       <Image
+                        fill={true}
                         src={item?.image || ""}
                         alt={item?.name || ""}
-                        fill={true}
                       ></Image>
                       <input
                         type="number"

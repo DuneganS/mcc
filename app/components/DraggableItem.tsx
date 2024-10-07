@@ -1,6 +1,5 @@
 import { useDraggable } from "@dnd-kit/core";
 import Image from "next/image";
-import { ItemProps } from "@/app/types/Item";
 
 const DraggableItem = ({
   id,

@@ -3,15 +3,10 @@ import React from "react";
 
 type DroppableSlotProps = {
   id: number;
-  isHovered: boolean;
   children?: React.ReactNode;
 };
 
-export default function DroppableSlot({
-  id,
-  isHovered,
-  children,
-}: DroppableSlotProps) {
+export default function DroppableSlot({ id, children }: DroppableSlotProps) {
   const { setNodeRef } = useDroppable({
     id: `droppable-${id}`,
   });
