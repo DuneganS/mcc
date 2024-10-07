@@ -1,9 +1,9 @@
 import Image from "next/image";
 import React, { useEffect } from "react";
-import { ItemProps } from "../types/Item";
-import { getData } from "../utils/indexedDb";
+import { ItemProps } from "@/app/types/Item";
+import { getData } from "@/app/utils/indexedDb";
 import { useDroppable } from "@dnd-kit/core";
-import { CRAFTING_ARROW } from "../utils/constants";
+import { CRAFTING_ARROW } from "@/app/utils/constants";
 
 const CraftingGridInSlot: React.FC<{ slot: number; itemId?: string }> = ({
   slot,
@@ -29,7 +29,11 @@ const CraftingGridInSlot: React.FC<{ slot: number; itemId?: string }> = ({
       ref={setNodeRef}
       href={item ? `/items/${item.id}` : "#"}
       title={item?.name}
-      className={`relative inline-block bg-[#8B8B8B] border-4 ${border} w-16 h-16 text-xs leading-none text-left align-bottom`}
+      className={`relative inline-block bg-[#8B8B8B] border-4 ${
+        isOver
+          ? "border-cyan-500"
+          : "border-t-[#373737] border-r-[#FFF] border-b-[#FFF] border-l-[#373737]"
+      } w-16 h-16 text-xs leading-none text-left align-bottom`}
     >
       {item && <Image src={item.image} alt={item.name} fill={true}></Image>}
     </a>

@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import { notFound } from "next/navigation";
-import Image from "next/image";
 import {
   getData,
   deleteData,
@@ -9,42 +8,22 @@ import {
   updateData,
 } from "@/app/utils/indexedDb";
 import { ItemProps } from "@/app/types/Item";
-import CraftingGrid from "@/app/components/CraftingGrid";
 import { DndContext, useDraggable } from "@dnd-kit/core";
 import { DEFAULT_ITEM } from "@/app/utils/constants";
-
-const DraggableItem = ({ item }: { item: ItemProps }) => {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: `draggable-item-${item.id}`,
-  });
-
-  const dragStyle = transform
-    ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-        zIndex: 1000,
-      }
-    : undefined;
-
-  return (
-    <Image
-      width={64}
-      height={64}
-      src={item.image}
-      alt={item.name}
-      ref={setNodeRef}
-      style={dragStyle}
-      {...attributes}
-      {...listeners}
-    />
-  );
-};
+import DraggableItem from "@/app/components/DraggableItem";
+import { CRAFTING_ARROW } from "@/app/utils/constants";
+import Image from "next/image";
+import React from "react";
+import DroppableSlot from "@/app/components/DroppableSlot";
+import { nanoid } from "nanoid";
 
 const ItemPage = ({ params }: { params: any }) => {
   const itemId = params.item;
   const [item, setItem] = useState<ItemProps>();
   const [items, setItems] = useState<ItemProps[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isDropped, setIsDropped] = useState(false);
+  const [hoveredDroppable, setHoveredDroppable] = useState<number | null>(null);
+  const [itemsInGrid, setItemsInGrid] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -61,6 +40,17 @@ const ItemPage = ({ params }: { params: any }) => {
             (item) => item.id === itemId
           );
           setItem(selectedItem);
+          setItemsInGrid((prev) => {
+            const newSelectedItems = { ...prev };
+            selectedItem?.recipeIngredients.forEach((ingredient, index) => {
+              if (ingredient) {
+                newSelectedItems[
+                  index.toString()
+                ] = `${ingredient}-${nanoid()}`;
+              }
+            });
+            return newSelectedItems;
+          });
         }
       }
       setIsLoading(false);
@@ -74,6 +64,28 @@ const ItemPage = ({ params }: { params: any }) => {
       notFound();
     }
   }, [isLoading, itemId]);
+
+  useEffect(() => {
+    setItem((prevItem) => {
+      if (!prevItem) return prevItem;
+
+      const newRecipeIngredients = Array(9).fill("");
+      console.log("itemsInGrid:", itemsInGrid); // Debugging log
+
+      Object.keys(itemsInGrid).forEach((key) => {
+        const index = parseInt(key, 10);
+        console.log(
+          `Setting index ${index} with value ${itemsInGrid[key].split("-")[0]}`
+        ); // Debugging log
+        newRecipeIngredients[index] = itemsInGrid[key].split("-")[0];
+      });
+
+      return {
+        ...prevItem,
+        recipeIngredients: newRecipeIngredients,
+      };
+    });
+  }, [itemsInGrid]);
 
   const handleItemDelete = () => {
     if (itemId === "newItemId") {
@@ -152,24 +164,58 @@ const ItemPage = ({ params }: { params: any }) => {
 
   const handleDragEnd = (event: any) => {
     const { active, over } = event;
-    if (over && active.id !== over.id) {
-      setIsDropped(true);
-      setItem((prev) => {
-        if (!prev) return prev;
-        const newIngredients = [...(prev.recipeIngredients || [])];
-        const overIndex = parseInt(over.id.replace("droppable-slot-", ""), 10);
-        newIngredients[overIndex] = active.id.replace("draggable-item-", "");
-        return { ...prev, recipeIngredients: newIngredients };
+    if (over) {
+      const droppableId = parseInt(over.id.split("-")[1], 10);
+      const uniqueId = `${active.id.split("-")[0]}-${nanoid()}`;
+      setItemsInGrid((prev) => {
+        const newSelectedItems = { ...prev };
+        // Remove the item from its previous droppable
+        Object.keys(newSelectedItems).forEach((key) => {
+          if (newSelectedItems[key] === active.id) {
+            delete newSelectedItems[key];
+          }
+        });
+        // Add the item to the new droppable
+        newSelectedItems[droppableId.toString()] = uniqueId;
+        return newSelectedItems;
+      });
+    } else {
+      setItemsInGrid((prev) => {
+        const newSelectedItems = { ...prev };
+        Object.keys(newSelectedItems).forEach((key) => {
+          if (newSelectedItems[key] === active.id) {
+            delete newSelectedItems[key];
+          }
+        });
+        return newSelectedItems;
       });
     }
   };
 
-  const handleRecipeOutputChange = (output: number) => {
-    setItem((prev) => (prev ? { ...prev, recipeOutput: output } : prev));
+  const handleDragOver = (event: any) => {
+    const { over } = event;
+    if (over) {
+      const droppableId = parseInt(over.id.split("-")[1], 10);
+      setHoveredDroppable(droppableId);
+    } else {
+      setHoveredDroppable(null);
+    }
+  };
+
+  const handleOutputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const outputCount = Math.max(1, Math.min(64, Number(e.target.value)));
+    setItem((prev) =>
+      prev
+        ? {
+            ...prev,
+            recipeOutput: outputCount,
+          }
+        : prev
+    );
   };
 
   return (
-    <DndContext onDragEnd={handleDragEnd}>
+    <DndContext onDragEnd={handleDragEnd} onDragOver={handleDragOver}>
       {isLoading ? (
         <div className="flex items-center justify-center min-h-screen">
           <div role="status">
@@ -349,26 +395,82 @@ const ItemPage = ({ params }: { params: any }) => {
               </h1>
               <div className="grid grid-cols-3 gap-4 m-2">
                 <ul className="grid grid-cols-5 gap-2 h-16">
-                  {items.map((i) => (
+                  {items.map((item) => (
                     <li
-                      key={i.id}
+                      key={item.id}
                       className="flex items-center justify-center bg-[#8B8B8B] rounded-xl border-2 border-black p-0.5"
                     >
-                      <DraggableItem item={i} />
+                      <DraggableItem
+                        id={item.id}
+                        name={item.name}
+                        image={item.image}
+                      />
                     </li>
                   ))}
                 </ul>
                 <div className="col-span-2 flex justify-center items-center">
-                  <CraftingGrid
-                    item={item}
-                    onRecipeOutputChange={handleRecipeOutputChange}
-                  />
+                  <span className="gap-1 border-2 p-1.5 bg-[#C6C6C6] inline-block rounded flex items-center flex-shrink-0 flex-grow-0 mb-5">
+                    <span className="inline-block relative bg-[#C6C6C6] border-solid border-1 border-t-[#DBDBDB] border-r-[#5B5B5B] border-b-[#5B5B5B] border-l-[#DBDBDB] p-0.5 text-left whitespace-nowrap align-bottom">
+                      {Array.from({ length: 3 }, (_, rowIndex) => (
+                        <span className="block" key={rowIndex}>
+                          {Array.from({ length: 3 }, (_, colIndex) => {
+                            const slot = rowIndex * 3 + colIndex;
+                            return (
+                              <DroppableSlot
+                                key={slot}
+                                id={slot}
+                                isHovered={hoveredDroppable === slot}
+                              >
+                                {itemsInGrid[slot] && (
+                                  <DraggableItem
+                                    key={itemsInGrid[slot]}
+                                    id={itemsInGrid[slot]}
+                                    name={
+                                      items.find(
+                                        (item) =>
+                                          item.id ===
+                                          itemsInGrid[slot].split("-")[0]
+                                      )?.name || ""
+                                    }
+                                    image={
+                                      items.find(
+                                        (item) =>
+                                          item.id ===
+                                          itemsInGrid[slot].split("-")[0]
+                                      )?.image || ""
+                                    }
+                                  />
+                                )}
+                              </DroppableSlot>
+                            );
+                          })}
+                        </span>
+                      ))}
+                    </span>
+                    <img className="scale-[.50] -ml-8" src={CRAFTING_ARROW} />
+                    <span className="relative inline-block bg-[#8B8B8B] border-2 border-t-[#373737] border-r-[#FFF] border-b-[#FFF] border-l-[#373737] w-24 h-24 text-xs leading-none text-left align-bottom -ml-8 flex items-center justify-center">
+                      <Image
+                        src={item?.image || ""}
+                        alt={item?.name || ""}
+                        fill={true}
+                      ></Image>
+                      <input
+                        type="number"
+                        value={item?.recipeOutput || 0}
+                        onChange={handleOutputChange}
+                        min={1}
+                        max={64}
+                        className="bg-transparent text-white font-bold text-2xl text-center appearance-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none w-full h-full z-10"
+                      />
+                    </span>
+                  </span>
                 </div>
               </div>
             </div>
           )}
         </div>
       )}
+      <pre>{JSON.stringify(item, null, 2)}</pre>
     </DndContext>
   );
 };
