@@ -65,15 +65,10 @@ const ItemPage: React.FC = () => {
   useEffect(() => {
     setItem((prevItem) => {
       if (!prevItem) return prevItem;
-
       const newRecipeIngredients = Array(9).fill("");
-      console.log("itemsInGrid:", itemsInGrid);
 
       Object.keys(itemsInGrid).forEach((key) => {
         const index = parseInt(key, 10);
-        console.log(
-          `Setting index ${index} with value ${itemsInGrid[key].split("-")[0]}`
-        );
         newRecipeIngredients[index] = itemsInGrid[key].split("-")[0];
       });
 

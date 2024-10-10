@@ -63,7 +63,41 @@ export default function ItemsPage() {
   };
 
   const handleImportItems = async () => {
-    console.log("Importing items");
+    if (
+      !confirm(
+        "Are you sure you want to import items? This will overwrite all items."
+      )
+    ) {
+      return;
+    }
+
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const result = e.target?.result as string;
+          const items: ItemProps[] = JSON.parse(result);
+          const db = indexedDB.open("mcc");
+          db.onsuccess = () => {
+            const transaction = db.result.transaction("items", "readwrite");
+            const objectStore = transaction.objectStore("items");
+            objectStore.clear();
+            items.forEach((item) => objectStore.add(item));
+            setItems(items);
+          };
+        } catch (error) {
+          alert("Invalid JSON file. Please upload a valid JSON file.");
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
   };
 
   return (
