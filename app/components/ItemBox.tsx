@@ -20,7 +20,7 @@ const ItemBox = ({
       <input
         type="number"
         min={0}
-        className="text-5xl text-white absolute w-full h-full bg-transparent text-center appearance-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none"
+        className="p-2 text-5xl text-white absolute w-full h-full bg-transparent text-center appearance-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none"
         onChange={(e) => {
           const value = e.target.value;
           onInputChange(item.id, value === "" ? null : Number(value));
