@@ -5,4 +5,5 @@ export interface ItemProps {
   image: string;
   recipeOutput: number;
   recipeIngredients: string[];
+  recipeIngredientAmounts: { id: string; amount: number }[];
 }

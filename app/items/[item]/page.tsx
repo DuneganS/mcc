@@ -65,16 +65,31 @@ const ItemPage: React.FC = () => {
   useEffect(() => {
     setItem((prevItem) => {
       if (!prevItem) return prevItem;
+
       const newRecipeIngredients = Array(9).fill("");
+      const itemCounts: { [key: string]: number } = {};
 
       Object.keys(itemsInGrid).forEach((key) => {
         const index = parseInt(key, 10);
-        newRecipeIngredients[index] = itemsInGrid[key].split("-")[0];
+        const itemId = itemsInGrid[key].split("-")[0];
+        newRecipeIngredients[index] = itemId;
+
+        if (itemCounts[itemId]) {
+          itemCounts[itemId]++;
+        } else {
+          itemCounts[itemId] = 1;
+        }
       });
+
+      const recipeIngredientAmounts = Object.keys(itemCounts).map((id) => ({
+        id,
+        amount: itemCounts[id],
+      }));
 
       return {
         ...prevItem,
         recipeIngredients: newRecipeIngredients,
+        recipeIngredientAmounts: recipeIngredientAmounts,
       };
     });
   }, [itemsInGrid]);
@@ -109,6 +124,7 @@ const ItemPage: React.FC = () => {
     }
 
     if (!item.craftable) {
+      item.recipeIngredientAmounts = [];
       item.recipeIngredients = Array(9).fill("");
       item.recipeOutput = 0;
     }
