@@ -30,7 +30,9 @@ export default function Home() {
     (id: string, amount: number | null) => {
       setCraftingItems((prev) => {
         if (amount === null) {
-          const { [id]: _, ...rest } = prev;
+          const rest = Object.fromEntries(
+            Object.entries(prev).filter(([key]) => key !== id)
+          );
           return rest;
         }
         return { ...prev, [id]: amount };
@@ -41,7 +43,7 @@ export default function Home() {
       const updatedCraftingItems = { ...craftingItems, [id]: amount };
       Object.entries(updatedCraftingItems).forEach(([itemId, itemAmount]) => {
         const item = items.find((item) => item.id === itemId);
-        if (item && itemAmount !== null) {
+        if (item && item.recipeIngredientAmounts && itemAmount !== null) {
           item.recipeIngredientAmounts.forEach((ingredient) => {
             newRequiredIngredients[ingredient.id] =
               (newRequiredIngredients[ingredient.id] || 0) +
